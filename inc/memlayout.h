@@ -77,9 +77,11 @@
  *                     |       Empty Memory (*)       |                   |
  *    0 ------------>  +------------------------------+                 --+
  *
+
  * (*) Note: The kernel ensures that "Invalid Memory" is *never* mapped.
  *     "Empty Memory" is normally unmapped, but user programs may map pages
  *     there if desired.  JOS user programs map pages temporarily at UTEMP.
+
  */
 
 
@@ -143,6 +145,7 @@
 typedef uint32_t pte_t;
 typedef uint32_t pde_t;
 
+
 #if JOS_USER
 /*
  * The page directory entry corresponding to the virtual address range
@@ -183,6 +186,7 @@ struct PageInfo {
 
 	uint16_t pp_ref;
 };
+
 
 #endif /* !__ASSEMBLER__ */
 #endif /* !JOS_INC_MEMLAYOUT_H */
