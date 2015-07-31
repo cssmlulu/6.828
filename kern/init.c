@@ -6,6 +6,7 @@
 
 #include <kern/monitor.h>
 #include <kern/console.h>
+
 #include <kern/pmap.h>
 #include <kern/kclock.h>
 #include <kern/env.h>
@@ -16,6 +17,7 @@
 #include <kern/spinlock.h>
 
 static void boot_aps(void);
+
 
 
 void
@@ -33,6 +35,7 @@ i386_init(void)
 	cons_init();
 
 	cprintf("6828 decimal is %o octal!\n", 6828);
+
 
 	// Lab 2 memory management initialization functions
 	mem_init();
