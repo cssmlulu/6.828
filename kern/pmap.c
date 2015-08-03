@@ -286,6 +286,12 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
+	uintptr_t kstacktop_i;
+	int i = 0;
+	for(; i<NCPU; i++) {
+		kstacktop_i = KSTACKTOP - i*(KSTKSIZE+KSTKGAP);
+		boot_map_region(kern_pgdir, kstacktop_i-KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W|PTE_P);
+	}
 
 }
 
@@ -330,7 +336,8 @@ page_init(void)
 	size_t upper_ppn = PADDR(boot_alloc(0)) / PGSIZE; 
 	for (i = 0; i < npages; i++) {
 		pages[i].pp_ref = 0;
-		if (i==0) continue;
+		if (i == 0) continue; // real-mode IDT & BIOS
+		if (i == MPENTRY_PADDR/PGSIZE) continue; //boot code for APs
 		if (lower_ppn <= i && i <= upper_ppn) continue;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
@@ -600,11 +607,14 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Be sure to round size up to a multiple of PGSIZE and to
 	// handle if this reservation would overflow MMIOLIM (it's
 	// okay to simply panic if this happens).
-	//
+	uint32_t nbase = base + ROUNDUP(size,PGSIZE);
+	if(nbase > MMIOLIM)
+		panic("kern/pmap.c/mmio_map_region: reservation overflow MMIOLIM!\n");
 	// Hint: The staff solution uses boot_map_region.
-	//
-	// Your code here:
-	panic("mmio_map_region not implemented");
+	boot_map_region(kern_pgdir, base, ROUNDUP(size,PGSIZE), pa, PTE_PCD|PTE_PWT|PTE_W);
+	void* ret = (void *)base;
+	base = nbase;
+	return ret;
 }
 
 static uintptr_t user_mem_check_addr;
