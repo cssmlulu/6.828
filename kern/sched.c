@@ -11,17 +11,35 @@ void sched_halt(void);
 void
 sched_yield(void)
 {
-	struct Env *idle;
+	struct Env *idle = NULL;
 
 	// Implement simple round-robin scheduling.
 	//
 	// Search through 'envs' for an ENV_RUNNABLE environment in
 	// circular fashion starting just after the env this CPU was
 	// last running.  Switch to the first such environment found.
+	
+	// start search at the beginning of the array if there was no previously running environment
+	int envid=0;
+	// or just after the env this CPU was last running
+	if(curenv) envid = ENVX(curenv->env_id);
+	
+	int i=0;
+	for(; i<NENV; i++) {
+		envid = (envid+1)%NENV;
+		if(envs[envid].env_status == ENV_RUNNABLE) {
+			idle = &envs[envid];
+			break;
+		}
+	}
 	//
 	// If no envs are runnable, but the environment previously
 	// running on this CPU is still ENV_RUNNING, it's okay to
 	// choose that environment.
+	if(idle)
+		env_run(idle);
+	else if( curenv && curenv->env_status == ENV_RUNNING)
+		env_run(curenv);
 	//
 	// Never choose an environment that's currently running on
 	// another CPU (env_status == ENV_RUNNING). If there are
