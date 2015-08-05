@@ -366,7 +366,7 @@ page_fault_handler(struct Trapframe *tf)
 
 		curenv->env_tf.tf_eip = (uint32_t) curenv->env_pgfault_upcall;
 		curenv->env_tf.tf_esp = (uint32_t) utf;
-		env_run(curenv);
+		env_run(curenv); // this will never return
 	}
 			
 	//
