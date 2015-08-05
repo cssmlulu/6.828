@@ -334,6 +334,8 @@ page_fault_handler(struct Trapframe *tf)
 	// Call the environment's page fault upcall, if one exists.  Set up a
 	// page fault stack frame on the user exception stack (below
 	// UXSTACKTOP), then branch to curenv->env_pgfault_upcall.
+	if (curenv->env_pgfault_upcall != NULL) {
+		struct UTrapframe* utf;
 	//
 	// The page fault upcall might cause another page fault, in which case
 	// we branch to the page fault upcall recursively, pushing another
@@ -346,6 +348,27 @@ page_fault_handler(struct Trapframe *tf)
 	// an extra word between the current top of the exception stack and
 	// the new stack frame because the exception stack _is_ the trap-time
 	// stack.
+		if (UXSTACKTOP-PGSIZE <= tf->tf_esp && tf->tf_esp < UXSTACKTOP)
+			utf = (struct UTrapframe*) 
+				(tf->tf_esp -sizeof(struct UTrapframe) - 4);
+		else
+			utf = (struct UTrapframe*) 
+				(UXSTACKTOP -sizeof(struct UTrapframe));
+
+		user_mem_assert(curenv, (void *)utf, sizeof(struct UTrapframe), PTE_U|PTE_W);
+
+		utf->utf_eflags	=	tf->tf_eflags;
+		utf->utf_eip	=	tf->tf_eip;
+		utf->utf_err	=	tf->tf_err;
+		utf->utf_esp 	=	tf->tf_esp;
+		utf->utf_fault_va=	fault_va;
+		utf->utf_regs	=	tf->tf_regs;
+
+		curenv->env_tf.tf_eip = (uint32_t) curenv->env_pgfault_upcall;
+		curenv->env_tf.tf_esp = (uint32_t) utf;
+		env_run(curenv);
+	}
+			
 	//
 	// If there's no page fault upcall, the environment didn't allocate a
 	// page for its exception stack or can't write to it, or the exception
