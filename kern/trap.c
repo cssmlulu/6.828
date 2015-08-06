@@ -257,8 +257,9 @@ trap_dispatch(struct Trapframe *tf)
 				tf->tf_regs.reg_ebx,
 				tf->tf_regs.reg_edi,
 				tf->tf_regs.reg_esi);
-			if (r<0)
-				panic("kern/trap.c/trap_dispatch: %e\n", r);
+			// Remove from lab4. Error is useful. Don't simply panic
+			//if (r<0)
+			//	panic("kern/trap.c/trap_dispatch: %e\n", r);
 			tf->tf_regs.reg_eax = r;
 			return;
 

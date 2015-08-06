@@ -23,8 +23,23 @@ int32_t
 ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 {
 	// LAB 4: Your code here.
-	panic("ipc_recv not implemented");
-	return 0;
+	int r;
+	// If 'pg' is nonnull, then any page sent by the sender will be mapped at that address.
+	if (pg != NULL)
+		r = sys_ipc_recv(pg);
+	else
+		r = sys_ipc_recv((void *)UTOP); //which means not to recv a page
+	// If 'from_env_store' is nonnull, then store the IPC sender's envid in *from_env_store.
+	if (from_env_store != NULL)
+		*from_env_store = (r < 0 ? 0 : thisenv->env_ipc_from);
+	// If 'perm_store' is nonnull, then store the IPC sender's page permission in *perm_store (this is nonzero iff a page was successfully transferred to 'pg').
+	if (perm_store != NULL)
+		*perm_store = (r < 0 ? 0 : thisenv->env_ipc_perm);
+	// If the system call fails, then store 0 in *fromenv and *perm (if they're nonnull) and return the error.
+	if (r < 0)
+		return r;
+	else
+		return thisenv->env_ipc_value;
 }
 
 // Send 'val' (and 'pg' with 'perm', if 'pg' is nonnull) to 'toenv'.
@@ -39,7 +54,14 @@ void
 ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 {
 	// LAB 4: Your code here.
-	panic("ipc_send not implemented");
+	int r;
+	void* srcva = pg? pg : (void *)UTOP;
+	while ((r = sys_ipc_try_send(to_env, val, srcva, perm)) != 0) {
+		if (r == -E_IPC_NOT_RECV)
+			sys_yield();
+		else
+			panic("lib/ipc.c/ipc_send(): sys_ipc_try_send error: %e", r);
+	}
 }
 
 // Find the first environment of the given type.  We'll use this to
